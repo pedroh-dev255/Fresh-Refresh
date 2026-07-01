@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fresh Refresh</title>
+
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+
+            <div>
+                <h1>Fresh Refresh</h1>
+                <p>Atualização inteligente de páginas</p>
+            </div>
+
+            <div class="status online" id="status">
+                Ativo
+            </div>
+
+        </header>
+
+        <nav class="tabs">
+
+            <button type="button" class="tab active" data-tab="home">
+                Home
+            </button>
+
+            <button type="button" class="tab" data-tab="automation">
+                Automações
+            </button>
+
+            <button type="button" class="tab" data-tab="timers">
+                Cronômetros
+            </button>
+
+            <button type="button" class="tab" data-tab="settings">
+                Configurações
+            </button>
+
+        </nav>
+
+        <!-- HOME -->
+
+        <div class="tab-content active" id="home">
+
+            <section class="card">
+
+                <span class="label">Página Atual</span>
+
+                <h2 id="site">Carregando...</h2>
+
+            </section>
+
+            <section class="grid">
+
+                <div class="card small">
+
+                    <span class="label">Próximo Refresh</span>
+
+                    <h3 id="countdown">--</h3>
+
+                </div>
+
+                <div class="card small">
+
+                    <span class="label">Atualizações</span>
+
+                    <h3 id="refreshCount">0</h3>
+
+                </div>
+
+            </section>
+
+            <section class="card">
+
+                <label for="interval">
+                    Intervalo
+                </label>
+
+                <div class="input-group">
+
+                    <input
+                        id="interval"
+                        type="number"
+                        min="1"
+                        value="30">
+
+                    <span>seg</span>
+
+                </div>
+
+            </section>
+
+            <section class="card">
+
+                <div class="switch-row">
+
+                    <label for="stopOnUserInteraction" class="switch-label">
+                        Parar com interação do usuário
+                    </label>
+
+                    <label class="switch-control" for="stopOnUserInteraction">
+                        <input
+                            id="stopOnUserInteraction"
+                            type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+
+                    <span id="interactionLabel">
+                        Desativado
+                    </span>
+
+                </div>
+
+            </section>
+
+            <div class="buttons">
+
+                <button
+                    id="start"
+                    type="button"
+                    class="primary">
+
+                    ▶ Iniciar
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- AUTOMAÇÕES -->
+
+        <div class="tab-content" id="automation">
+
+            <section class="card">
+
+                <h2>Automações</h2>
+
+                <p class="description">
+
+                    Em breve você poderá cadastrar regras de automação.
+
+                </p>
+
+            </section>
+
+        </div>
+
+        <!-- CRONÔMETROS -->
+
+        <div class="tab-content" id="timers">
+
+            <section class="card">
+
+                <h2>Cronômetros</h2>
+
+                <p class="description">
+                    Resumo dos refreshes ativos em todas as abas.
+                </p>
+
+            </section>
+
+            <section class="card">
+
+                <div id="timersList" class="timers-list"></div>
+
+            </section>
+
+        </div>
+
+        <!-- CONFIGURAÇÕES -->
+
+        <div class="tab-content" id="settings">
+
+            <section class="card">
+
+                <h2>Configurações</h2>
+
+                <p class="description">
+
+                    Configurações gerais da extensão.
+
+                </p>
+
+            </section>
+
+        </div>
+
+    </div>
+
+    <script src="popup.js"></script>
+
+</body>
+
+</html>
