@@ -5,15 +5,18 @@ const DEFAULT_STATE = {
     refreshCount: 0,
     nextRefreshAt: null,
     lastRefreshedAt: null,
-    userInteracted: false
+    userInteracted: false,
+    automationId: null
 };
 
 let tabStates = {};
 let refreshTimers = new Map();
+let automations = [];
 
 async function init() {
-    const stored = await chrome.storage.local.get(["tabStates"]);
+    const stored = await chrome.storage.local.get(["tabStates", "automations"]);
     tabStates = stored.tabStates || {};
+    automations = stored.automations || [];
 
     Object.entries(tabStates).forEach(([tabId, state]) => {
         if (state?.running) {
@@ -21,12 +24,100 @@ async function init() {
         }
     });
 
+    const tabs = await chrome.tabs.query({});
+    await Promise.all(tabs.map((tab) => syncAutomationForTab(tab.id, tab.url)));
+
     notifyPopup();
 }
 
 function persistStates() {
-    chrome.storage.local.set({ tabStates });
+    chrome.storage.local.set({ tabStates, automations });
     notifyPopup();
+}
+
+function persistAutomations() {
+    chrome.storage.local.set({ tabStates, automations });
+    notifyPopup();
+}
+
+function getAutomations() {
+    return automations.filter((item) => item && item.id);
+}
+
+function normalizeUrl(value) {
+    return String(value || "").trim().toLowerCase();
+}
+
+function matchesAutomation(automation, url) {
+    const target = normalizeUrl(url);
+    const pattern = normalizeUrl(automation?.url);
+
+    if (!target || !pattern) {
+        return false;
+    }
+
+    return target === pattern || target.startsWith(pattern);
+}
+
+function getMatchingAutomation(url) {
+    return getAutomations().find((automation) => automation.enabled !== false && matchesAutomation(automation, url));
+}
+
+function saveAutomation(payload) {
+    const trimmedUrl = String(payload?.url || "").trim();
+
+    if (!trimmedUrl) {
+        return null;
+    }
+
+    const automation = {
+        id: payload?.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        url: trimmedUrl,
+        interval: Math.max(1, Number(payload?.interval) || 30),
+        stopOnUserInteraction: Boolean(payload?.stopOnUserInteraction),
+        enabled: payload?.enabled !== false
+    };
+
+    const index = automations.findIndex((item) => item.id === automation.id);
+
+    if (index >= 0) {
+        automations[index] = automation;
+    } else {
+        automations.unshift(automation);
+    }
+
+    persistAutomations();
+    return automation;
+}
+
+function deleteAutomation(id) {
+    automations = automations.filter((item) => item.id !== id);
+    persistAutomations();
+}
+
+async function syncAutomationForTab(tabId, url) {
+    if (!tabId) {
+        return;
+    }
+
+    const matchingAutomation = getMatchingAutomation(url);
+    const state = getTabState(tabId);
+
+    if (matchingAutomation) {
+        if (!state.running || state.automationId !== matchingAutomation.id) {
+            startRefresh(tabId, matchingAutomation.interval, matchingAutomation.stopOnUserInteraction, matchingAutomation.id);
+        }
+        return;
+    }
+
+    if (state.automationId) {
+        stopRefresh(tabId);
+    }
+}
+
+async function syncAllAutomations() {
+    const tabs = await chrome.tabs.query({});
+    await Promise.all(tabs.map((tab) => syncAutomationForTab(tab.id, tab.url)));
 }
 
 function shortenUrl(url) {
@@ -130,18 +221,20 @@ function stopRefresh(tabId) {
     state.running = false;
     state.nextRefreshAt = null;
     state.userInteracted = false;
+    state.automationId = null;
 
     clearRefreshLoop(tabId);
     persistStates();
     notifyPopup(tabId, state);
 }
 
-function startRefresh(tabId, interval, stopOnUserInteraction) {
+function startRefresh(tabId, interval, stopOnUserInteraction, automationId = null) {
     const state = getTabState(tabId);
     state.running = true;
     state.interval = Math.max(1, Number(interval) || 30);
     state.stopOnUserInteraction = Boolean(stopOnUserInteraction);
     state.userInteracted = false;
+    state.automationId = automationId;
     state.nextRefreshAt = Date.now() + state.interval * 1000;
 
     scheduleRefreshLoop(tabId, state);
@@ -198,6 +291,16 @@ chrome.runtime.onStartup.addListener(() => {
     init();
 });
 
+chrome.tabs.onActivated.addListener((activeInfo) => {
+    chrome.tabs.get(activeInfo.tabId).then((tab) => syncAutomationForTab(tab.id, tab.url));
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.url || changeInfo.status === "complete") {
+        syncAutomationForTab(tabId, tab.url);
+    }
+});
+
 chrome.tabs.onRemoved.addListener((tabId) => {
     clearRefreshLoop(tabId);
     delete tabStates[String(tabId)];
@@ -232,6 +335,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         getTimersSummary().then((timers) => {
             sendResponse({ timers });
         });
+        return true;
+    }
+
+    if (message?.type === "getAutomations") {
+        sendResponse({ automations: getAutomations() });
+        return true;
+    }
+
+    if (message?.type === "saveAutomation") {
+        const automation = saveAutomation(message);
+        sendResponse({ automation });
+        return true;
+    }
+
+    if (message?.type === "deleteAutomation") {
+        deleteAutomation(message.id);
+        sendResponse({ success: true });
         return true;
     }
 

@@ -132,6 +132,14 @@
 
                 </button>
 
+                <button
+                    id="saveCurrentAutomation"
+                    type="button">
+
+                    Salvar automação
+
+                </button>
+
             </div>
 
         </div>
@@ -145,10 +153,65 @@
                 <h2>Automações</h2>
 
                 <p class="description">
-
-                    Em breve você poderá cadastrar regras de automação.
-
+                    Cadastre URLs para ativar o refresh automaticamente quando a página for aberta.
                 </p>
+
+            </section>
+
+            <section class="card">
+
+                <label for="automationUrl">URL</label>
+
+                <input
+                    id="automationUrl"
+                    type="text"
+                    class="automation-input"
+                    placeholder="https://exemplo.com">
+
+                <label for="automationInterval">Intervalo</label>
+
+                <div class="input-group automation-inline">
+
+                    <input
+                        id="automationInterval"
+                        type="number"
+                        min="1"
+                        value="30">
+
+                    <span>seg</span>
+
+                </div>
+
+                <div class="switch-row automation-switch-row">
+
+                    <label for="automationStopOnUserInteraction" class="switch-label">
+                        Parar com interação do usuário
+                    </label>
+
+                    <label class="switch-control" for="automationStopOnUserInteraction">
+                        <input
+                            id="automationStopOnUserInteraction"
+                            type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+
+                </div>
+
+                <div class="buttons">
+
+                    <button id="saveAutomation" type="button" class="primary">
+                        Salvar automação
+                    </button>
+
+                </div>
+
+            </section>
+
+            <section class="card">
+
+                <h3>Automações salvas</h3>
+
+                <div id="automationList" class="automation-list"></div>
 
             </section>
 

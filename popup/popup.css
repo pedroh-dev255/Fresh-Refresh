@@ -457,6 +457,87 @@ footer a:hover{
 
 }
 
+.automation-input{
+
+    width:100%;
+    background:#0f172a;
+    border:none;
+    color:white;
+    border-radius:10px;
+    padding:12px;
+    font-size:15px;
+    margin-bottom:10px;
+
+}
+
+.automation-inline{
+
+    margin-bottom:10px;
+
+}
+
+.automation-switch-row{
+
+    margin-bottom:12px;
+
+}
+
+.automation-list{
+
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+
+}
+
+.automation-item{
+
+    background:#0f172a;
+    border-radius:10px;
+    padding:10px;
+    border:1px solid #334155;
+
+}
+
+.automation-item-header{
+
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    align-items:flex-start;
+
+}
+
+.automation-url{
+
+    font-weight:600;
+    word-break:break-word;
+
+}
+
+.automation-meta{
+
+    color:#94a3b8;
+    font-size:13px;
+    margin-top:6px;
+
+}
+
+.automation-actions{
+
+    display:flex;
+    gap:6px;
+
+}
+
+.automation-actions button{
+
+    padding:8px 10px;
+    font-size:12px;
+    flex:0 0 auto;
+
+}
+
 @keyframes fade{
 
     from{

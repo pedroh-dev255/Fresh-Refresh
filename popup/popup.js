@@ -1,6 +1,7 @@
 let refreshRunning = false;
 let countdownTimer = null;
 let currentTabId = null;
+let currentTabUrl = "";
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -47,10 +48,16 @@ async function loadCurrentTab() {
     });
 
     currentTabId = tab?.id ?? null;
+    currentTabUrl = tab?.url || "";
     const site = document.getElementById("site");
 
-    if (tab?.url) {
-        site.textContent = tab.url;
+    if (currentTabUrl) {
+        site.textContent = currentTabUrl;
+        const automationUrlInput = document.getElementById("automationUrl");
+
+        if (automationUrlInput && !automationUrlInput.value) {
+            automationUrlInput.value = currentTabUrl;
+        }
     } else {
         site.textContent = "Sem página ativa";
     }
@@ -70,6 +77,8 @@ function initTabs() {
 
 function initButtons() {
     document.getElementById("start").addEventListener("click", toggleRefresh);
+    document.getElementById("saveCurrentAutomation").addEventListener("click", saveCurrentAutomation);
+    document.getElementById("saveAutomation").addEventListener("click", saveCurrentAutomation);
 }
 
 function initInputs() {
@@ -114,6 +123,7 @@ async function loadState() {
     }
 
     await loadTimersSummary();
+    await loadAutomations();
 }
 
 async function loadTimersSummary() {
@@ -203,6 +213,43 @@ function shortenUrl(url) {
     } catch {
         return url.replace(/^https?:\/\//i, "").slice(0, 40);
     }
+}
+
+async function loadAutomations() {
+    const response = await chrome.runtime.sendMessage({ type: "getAutomations" });
+
+    if (response?.automations) {
+        renderAutomations(response.automations);
+    }
+}
+
+function renderAutomations(automations) {
+    const container = document.getElementById("automationList");
+
+    if (!container) {
+        return;
+    }
+
+    if (!automations || automations.length === 0) {
+        container.innerHTML = '<div class="empty-state">Nenhuma automação cadastrada.</div>';
+        return;
+    }
+
+    container.innerHTML = automations
+        .map((automation) => `
+            <div class="automation-item">
+                <div class="automation-item-header">
+                    <div>
+                        <div class="automation-url">${automation.url}</div>
+                        <div class="automation-meta">Intervalo: ${automation.interval || 30}s · Parar com clique: ${automation.stopOnUserInteraction ? "Sim" : "Não"}</div>
+                    </div>
+                    <div class="automation-actions">
+                        <button class="timer-btn danger" data-action="delete-automation" data-automation-id="${automation.id}">Excluir</button>
+                    </div>
+                </div>
+            </div>
+        `)
+        .join("");
 }
 
 function applyState(state) {
@@ -298,11 +345,57 @@ function initTimerActions() {
     }
 }
 
+function initAutomationActions() {
+    const container = document.getElementById("automationList");
+
+    if (container) {
+        container.addEventListener("click", handleAutomationAction);
+    }
+}
+
+async function saveCurrentAutomation() {
+    const automationUrl = document.getElementById("automationUrl").value.trim();
+
+    if (!automationUrl) {
+        return;
+    }
+
+    const interval = Math.max(1, Number(document.getElementById("automationInterval").value) || 30);
+    const stopOnUserInteraction = document.getElementById("automationStopOnUserInteraction").checked;
+
+    await chrome.runtime.sendMessage({
+        type: "saveAutomation",
+        url: automationUrl,
+        interval,
+        stopOnUserInteraction
+    });
+
+    await loadAutomations();
+}
+
+async function handleAutomationAction(event) {
+    const button = event.target.closest("button[data-action='delete-automation']");
+
+    if (!button) {
+        return;
+    }
+
+    const id = button.dataset.automationId;
+
+    if (!id) {
+        return;
+    }
+
+    await chrome.runtime.sendMessage({ type: "deleteAutomation", id });
+    await loadAutomations();
+}
+
 async function init() {
     initTabs();
     initButtons();
     initInputs();
     initTimerActions();
+    initAutomationActions();
     await loadCurrentTab();
     await loadState();
     attachRuntimeMessages();
